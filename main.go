@@ -31,13 +31,15 @@ func main() {
 	err := params.checkFileParams()
 	if err != nil {
 		flag.PrintDefaults()
-		log.Panicf("Error: %v", err)
+		fmt.Printf("Error: %v\n", err)
+		os.Exit(1)
 	}
 
 	err = params.checkLineCount()
 	if err != nil {
 		flag.PrintDefaults()
-		log.Panicf("Error: %v", err)
+		fmt.Printf("Error: %v\n", err)
+		os.Exit(1)
 	}
 
 	fmt.Printf("Source file: %v \n", params.sourceFile)
