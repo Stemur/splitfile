@@ -47,7 +47,7 @@ func Test_sourceFileName(t *testing.T) {
 func Test_splitFileLength(t *testing.T) {
 	var f flagParams
 
-	lineCountError := "the file cannot be split to 0 lines"
+	lineCountError := "the file cannot be split to less than 1 line per file"
 
 	var lineCountTests = []struct {
 		lineCount int
@@ -68,6 +68,31 @@ func Test_splitFileLength(t *testing.T) {
 		}
 	}
 
+}
+
+func Test_maxFileCount(t *testing.T) {
+	var f flagParams
+
+	maxFileCountError := "maximum file count must be zero (maximum files) or greater"
+
+	var maxFileCountTests = []struct {
+		maxFileCount int
+		output       string
+	}{
+		{1, ""},
+		{0, ""},
+		{-1, maxFileCountError},
+	}
+
+	for _, tt := range maxFileCountTests {
+		f.maxFiles = tt.maxFileCount
+		got := f.checkFileCount()
+		expected := tt.output
+
+		if got != nil && got.Error() != expected {
+			t.Errorf("Got: %v Expected: %v", got, expected)
+		}
+	}
 }
 
 func Test_incFileName(t *testing.T) {
