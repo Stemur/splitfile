@@ -14,54 +14,40 @@ func Benchmark_incFilename(b *testing.B) {
 	}
 }
 
-func Test_sourceFileName(t *testing.T) {
+func Test_CLI(t *testing.T) {
 	var f flagParams
 
 	blankNameerr := "the source and destination file names cannot be blank"
 	sameNameerr := "the source and destination files must be different"
+	lineCountError := "the file cannot be split to less than 1 line per file"
+	maxFileCountError := "maximum file count must be zero (maximum files) or greater"
 
 	var fileNameTests = []struct {
 		sourcefile string
 		destfile   string
+		lineCount  int
+		maxfiles   int
 		output     string
 	}{
-		{"", "destfiletest.tmp", blankNameerr},
-		{"sourcefiletest.tmp", "destfiletest.tmp", ""},
-		{"sourcefiletest.tmp", "", blankNameerr},
-		{"", "", blankNameerr},
-		{"sourcefiletest.tmp", "sourcefiletest.tmp", sameNameerr},
+		{"", "destfiletest.tmp", 10, 0, blankNameerr},
+		{"sourcefiletest.tmp", "destfiletest.tmp", 10, 0, ""},
+		{"sourcefiletest.tmp", "", 10, 0, blankNameerr},
+		{"", "", 10, 0, blankNameerr},
+		{"sourcefiletest.tmp", "destfiletest.tmp", 10, 0, sameNameerr},
+		{"sourcefiletest.tmp", "destfiletest.tmp", 100, 0, ""},
+		{"sourcefiletest.tmp", "destfiletest.tmp", -1, 0, lineCountError},
+		{"sourcefiletest.tmp", "destfiletest.tmp", 1, 1, ""},
+		{"sourcefiletest.tmp", "destfiletest.tmp", 10, 1, ""},
+		{"sourcefiletest.tmp", "destfiletest.tmp", 10, 0, ""},
+		{"sourcefiletest.tmp", "destfiletest.tmp", 10, -1, maxFileCountError},
 	}
 
 	for _, tt := range fileNameTests {
 		f.sourceFile = tt.sourcefile
 		f.destFile = tt.destfile
-		got := f.checkFileParams()
-		expected := tt.output
-
-		if got != nil && got.Error() != expected {
-			t.Errorf("Got: %v Expected: %v", got, expected)
-		}
-	}
-
-}
-
-func Test_splitFileLength(t *testing.T) {
-	var f flagParams
-
-	lineCountError := "the file cannot be split to less than 1 line per file"
-
-	var lineCountTests = []struct {
-		lineCount int
-		output    string
-	}{
-		{100, ""},
-		{0, lineCountError},
-		{1, ""},
-	}
-
-	for _, tt := range lineCountTests {
 		f.lineCount = tt.lineCount
-		got := f.checkLineCount()
+		f.maxFiles = tt.maxfiles
+		got := f.checkFlagErrors()
 		expected := tt.output
 
 		if got != nil && got.Error() != expected {
@@ -69,31 +55,6 @@ func Test_splitFileLength(t *testing.T) {
 		}
 	}
 
-}
-
-func Test_maxFileCount(t *testing.T) {
-	var f flagParams
-
-	maxFileCountError := "maximum file count must be zero (maximum files) or greater"
-
-	var maxFileCountTests = []struct {
-		maxFileCount int
-		output       string
-	}{
-		{1, ""},
-		{0, ""},
-		{-1, maxFileCountError},
-	}
-
-	for _, tt := range maxFileCountTests {
-		f.maxFiles = tt.maxFileCount
-		got := f.checkFileCount()
-		expected := tt.output
-
-		if got != nil && got.Error() != expected {
-			t.Errorf("Got: %v Expected: %v", got, expected)
-		}
-	}
 }
 
 func Test_incFileName(t *testing.T) {
