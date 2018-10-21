@@ -15,6 +15,7 @@ type flagParams struct {
 	lineCount  int
 	destFile   string
 	maxFiles   int
+	countLines bool
 }
 
 func main() {
@@ -22,9 +23,10 @@ func main() {
 	lineCount := flag.Int("l", 0, "Maximum lines file to be split into")
 	destFile := flag.String("o", "", "Destination file name.")
 	maxFiles := flag.Int("m", 0, "Maximum number of files to be output. (0 for all)")
+	countLines := flag.Bool("c", false, "Count the number of lines in the file.")
 	flag.Parse()
 
-	params := flagParams{*sourceFile, *lineCount, *destFile, *maxFiles}
+	params := flagParams{*sourceFile, *lineCount, *destFile, *maxFiles, *countLines}
 
 	// Check for errors with the cli parameters
 	err := params.checkFlagErrors()
@@ -35,22 +37,36 @@ func main() {
 	}
 
 	fmt.Printf("Source file: %v \n", params.sourceFile)
-	fmt.Printf("Destination file: %v \n", params.destFile)
 
-	fileCount, err := params.splitFile()
-	if err != nil {
-		fmt.Printf("Error: %v", err)
-		return
+	if !params.countLines {
+		fmt.Printf("Destination file: %v \n", params.destFile)
+
+		fileCount, err := params.splitFile(params.countLines)
+		if err != nil {
+			fmt.Printf("Error: %v", err)
+			return
+		}
+
+		fmt.Printf("Split complete. %v files.\n", fileCount)
+	} else {
+		lineCount, err := params.splitFile(params.countLines)
+		if err != nil {
+			fmt.Printf("Error: %v", err)
+			return
+		}
+
+		fmt.Printf("Totals lines in file %v: %v.\n", params.sourceFile, lineCount)
 	}
-
-	fmt.Printf("Split complete. %v files.\n", fileCount)
-
 }
 
 func (param flagParams) checkFlagErrors() error {
 	var err error
 
-	if param.sourceFile == "" || param.destFile == "" {
+	if param.sourceFile == "" && param.countLines == true {
+		return fmt.Errorf("the source file names cannot be blank when counting lines in the file")
+	}
+
+	if (param.sourceFile == "" || param.destFile == "") && param.countLines == false {
 		return fmt.Errorf("the source and destination file names cannot be blank")
 	}
 
@@ -58,7 +74,7 @@ func (param flagParams) checkFlagErrors() error {
 		return fmt.Errorf("the source and destination files must be different")
 	}
 
-	if param.lineCount < 1 {
+	if param.lineCount < 1 && param.countLines == false {
 		return fmt.Errorf("the file cannot be split to less than 1 line per file")
 	}
 
@@ -77,10 +93,11 @@ func (param flagParams) incFilename(counter int) string {
 
 }
 
-func (param flagParams) splitFile() (int, error) {
+func (param flagParams) splitFile(countOnly bool) (int, error) {
 
 	var err error
 	var fileCount int
+	var lineCount int
 
 	// Open the source file for reading
 	fileReader, err := os.Open(param.sourceFile)
@@ -90,30 +107,42 @@ func (param flagParams) splitFile() (int, error) {
 	defer fileReader.Close()
 	bufioReader := bufio.NewReader(fileReader)
 
-	// Open the Destination file for writing
-	for {
-		fileCount++
-		outputWriter, err := os.Create(param.incFilename(fileCount))
-		if err != nil {
-			err := fmt.Errorf("creating output file: %v", err)
-			return fileCount, err
-		}
-		defer outputWriter.Close()
-
-		owriter := bufio.NewWriter(outputWriter)
-		defer owriter.Flush()
-
-		for i := 0; i < param.lineCount; i++ {
-			fileLines, readerr := bufioReader.ReadString('\n')
+	if countOnly {
+		for {
+			_, readerr := bufioReader.ReadString('\n')
 			if readerr == io.EOF {
+				return lineCount, err
+			}
+			lineCount = lineCount + 1
+		}
+
+	} else {
+
+		// Open the Destination file for writing
+		for {
+			fileCount++
+			outputWriter, err := os.Create(param.incFilename(fileCount))
+			if err != nil {
+				err := fmt.Errorf("creating output file: %v", err)
 				return fileCount, err
 			}
-			if _, err := owriter.WriteString(fileLines); err != nil {
-				return fileCount, fmt.Errorf("writing to output file: %v", err)
+			defer outputWriter.Close()
+
+			owriter := bufio.NewWriter(outputWriter)
+			defer owriter.Flush()
+
+			for i := 0; i < param.lineCount; i++ {
+				fileLines, readerr := bufioReader.ReadString('\n')
+				if readerr == io.EOF {
+					return fileCount, err
+				}
+				if _, err := owriter.WriteString(fileLines); err != nil {
+					return fileCount, fmt.Errorf("writing to output file: %v", err)
+				}
 			}
-		}
-		if param.maxFiles > 0 && fileCount >= param.maxFiles {
-			return fileCount, err
+			if param.maxFiles > 0 && fileCount >= param.maxFiles {
+				return fileCount, err
+			}
 		}
 	}
 

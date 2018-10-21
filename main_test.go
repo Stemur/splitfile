@@ -103,12 +103,12 @@ func Test_fileExists(t *testing.T) {
 		params   flagParams
 		expected string
 	}{
-		{1, flagParams{"unknown", 10, "unknown", 5}, "open %s: The system cannot find the file specified."},
-		{2, flagParams{"testfile.txt", 1, "unknown", 1}, "open %s: The system cannot find the file specified."},
+		{1, flagParams{"unknown", 10, "unknown", 5, false}, "open %s: The system cannot find the file specified."},
+		{2, flagParams{"testfile.txt", 1, "unknown", 1, false}, "open %s: The system cannot find the file specified."},
 	}
 
 	for _, tt := range tests {
-		_, got := tt.params.splitFile()
+		_, got := tt.params.splitFile(false)
 		if got.Error() != fmt.Sprintf(tt.expected, tt.params.sourceFile) {
 			t.Errorf("Counter: %v \nExpected: %s\nResult  : %s", tt.counter, tt.expected, got)
 		}
