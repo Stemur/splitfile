@@ -11,7 +11,11 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
+# Folders
+.idea
+
 # Executable
 splitfile
+splitfile.exe
 
 .DS_Store
