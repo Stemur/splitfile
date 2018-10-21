@@ -80,17 +80,18 @@ func Test_multiincFileName(t *testing.T) {
 	var fileNameTests = []struct {
 		counter  int
 		expected string
+		altexp string
 	}{
-		{1, "MyFileName1.txt"},
-		{2, "MyFileName2.txt"},
-		{3, "MyFileName3.txt"},
-		{4, "MyFileName4.txt"},
-		{5, "MyFileName5.txt"},
+		{1, "MyFileName1.txt", "MyFileName1.txt"},
+		{2, "MyFileName2.txt", "MyFileName2.txt"},
+		{3, "MyFileName3.txt", "MyFileName3.txt"},
+		{4, "MyFileName4.txt", "MyFileName4.txt"},
+		{5, "MyFileName5.txt", "MyFileName5.txt"},
 	}
 
 	for _, tt := range fileNameTests {
 		result := f.incFilename(tt.counter)
-		if result != tt.expected {
+		if result != tt.expected && result != tt.altexp {
 			t.Errorf("Counter: %v Expected: %v Result: %v", tt.counter, tt.expected, result)
 		}
 	}
@@ -102,14 +103,16 @@ func Test_fileExists(t *testing.T) {
 		counter  int
 		params   flagParams
 		expected string
+		altexp string
 	}{
-		{1, flagParams{"unknown", 10, "unknown", 5, false}, "open %s: The system cannot find the file specified."},
-		{2, flagParams{"testfile.txt", 1, "unknown", 1, false}, "open %s: The system cannot find the file specified."},
+		{1, flagParams{"unknown", 10, "unknown", 5, false}, "open %s: The system cannot find the file specified.", "open %s: no such file or directory"},
+		{2, flagParams{"testfile.txt", 1, "unknown", 1, false}, "open %s: The system cannot find the file specified.", "open %s: no such file or directory"},
 	}
+
 
 	for _, tt := range tests {
 		_, got := tt.params.splitFile(false)
-		if got.Error() != fmt.Sprintf(tt.expected, tt.params.sourceFile) {
+		if got.Error() != fmt.Sprintf(tt.expected, tt.params.sourceFile) && got.Error() != fmt.Sprintf(tt.altexp, tt.params.sourceFile) {
 			t.Errorf("Counter: %v \nExpected: %s\nResult  : %s", tt.counter, tt.expected, got)
 		}
 	}
