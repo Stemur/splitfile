@@ -3,6 +3,7 @@
 GOCMD=Go
 GOBUILD=$(GOCMD) build
 GOTEST=$(GOCMD) test
+GOBENCH=$(GOCMD) test -bench=.
 BINARY_NAME=splitfile
 BINARY_WINDOWS=$(BINARY_NAME).exe
 
@@ -15,6 +16,9 @@ run:
 
 test:
 	$(GOTEST) -v ./...
+
+benchmark:
+	$(GOBENCH)
 
 # Cross compilation
 build-windows:
