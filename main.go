@@ -18,15 +18,19 @@ type flagParams struct {
 	countLines bool
 }
 
-func main() {
-	sourceFile := flag.String("i", "", "File to be split.")
-	lineCount := flag.Int("l", 0, "Maximum lines file to be split into")
-	destFile := flag.String("o", "", "Destination file name.")
-	maxFiles := flag.Int("m", 0, "Maximum number of files to be output. (0 for all)")
-	countLines := flag.Bool("c", false, "Count the number of lines in the file.")
-	flag.Parse()
+var params flagParams
 
-	params := flagParams{*sourceFile, *lineCount, *destFile, *maxFiles, *countLines}
+func init() {
+	flag.StringVar(&params.sourceFile, "i", "","File to be split")
+	flag.IntVar(&params.lineCount, "l", 0, "maximum lines files to be split into")
+	flag.StringVar(&params.destFile, "o", "", "Destination file name")
+	flag.IntVar(&params.maxFiles, "m", 0, "Maximum number of files to be output. (0 for all)")
+	flag.BoolVar(&params.countLines, "c", false, "Count the number of lines in the file")
+}
+
+func main() {
+
+	flag.Parse()
 
 	// Check for errors with the cli parameters
 	err := params.checkFlagErrors()
