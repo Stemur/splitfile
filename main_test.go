@@ -105,8 +105,8 @@ func Test_fileExists(t *testing.T) {
 		expected string
 		altexp string
 	}{
-		{1, flagParams{"unknown", 10, "unknown", 5, false}, "open %s: The system cannot find the file specified.", "open %s: no such file or directory"},
-		{2, flagParams{"testfile.txt", 1, "unknown", 1, false}, "open %s: The system cannot find the file specified.", "open %s: no such file or directory"},
+		{1, flagParams{"unknown", 10, "unknown", 5, false},     "opening source file for reading: open %s: no such file or directory", "source file for reading: open %s: no such file or directory"},
+		{2, flagParams{"testfile.txt", 1, "unknown", 1, false}, "opening source file for reading: open %s: no such file or directory", "source file for reading: open %s: no such file or directory"},
 	}
 
 
