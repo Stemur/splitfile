@@ -113,32 +113,31 @@ func (param flagParams) splitFile(countOnly bool) (int, error) {
 
 	if countOnly {
 		return lineCounter(fileReader)
-	} else {
+	}
 
-		bufioReader := bufio.NewReader(fileReader)
-		for {
-			fileCount++
-			outputWriter, err := os.Create(param.incFilename(fileCount))
-			if err != nil {
-				return fileCount, fmt.Errorf("creating output file: %v", err)
-			}
+	bufioReader := bufio.NewReader(fileReader)
+	for {
+		fileCount++
+		outputWriter, err := os.Create(param.incFilename(fileCount))
+		if err != nil {
+			return fileCount, fmt.Errorf("creating output file: %v", err)
+		}
 
-			owriter := bufio.NewWriter(outputWriter)
-			for i := 0; i < param.lineCount; i++ {
-				fileLines, eoferr = bufioReader.ReadString('\n')
-				if eoferr == io.EOF {
-					break
-				}
-				if _, err := owriter.WriteString(fileLines); err != nil {
-					return fileCount, fmt.Errorf("writing to output file: %v", err)
-				}
+		owriter := bufio.NewWriter(outputWriter)
+		for i := 0; i < param.lineCount; i++ {
+			fileLines, eoferr = bufioReader.ReadString('\n')
+			if eoferr == io.EOF {
+				break
 			}
-			owriter.Flush()
-			outputWriter.Close()
+			if _, err := owriter.WriteString(fileLines); err != nil {
+				return fileCount, fmt.Errorf("writing to output file: %v", err)
+			}
+		}
+		owriter.Flush()
+		outputWriter.Close()
 
-			if (param.maxFiles > 0 && fileCount >= param.maxFiles) || eoferr == io.EOF {
-				return fileCount, err
-			}
+		if (param.maxFiles > 0 && fileCount >= param.maxFiles) || eoferr == io.EOF {
+			return fileCount, err
 		}
 	}
 }
@@ -158,5 +157,4 @@ func lineCounter(rdr io.Reader) (int, error) {
 		}
 	}
 
-	return 0, nil
 }
