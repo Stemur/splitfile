@@ -21,7 +21,7 @@ type flagParams struct {
 var params flagParams
 
 func init() {
-	flag.StringVar(&params.sourceFile, "i", "","File to be split")
+	flag.StringVar(&params.sourceFile, "i", "", "File to be split")
 	flag.IntVar(&params.lineCount, "l", 0, "maximum lines files to be split into")
 	flag.StringVar(&params.destFile, "o", "", "Destination file name")
 	flag.IntVar(&params.maxFiles, "m", 0, "Maximum number of files to be output. (0 for all)")
@@ -103,7 +103,6 @@ func (param flagParams) splitFile(countOnly bool) (int, error) {
 	var eoferr error
 	var fileCount int
 	var fileLines string
-	var lineCount int
 
 	// Open the source file for reading
 	fileReader, err := os.Open(param.sourceFile)
@@ -111,20 +110,12 @@ func (param flagParams) splitFile(countOnly bool) (int, error) {
 		return fileCount, fmt.Errorf("opening source file for reading: %v", err)
 	}
 	defer fileReader.Close()
-	bufioReader := bufio.NewReader(fileReader)
 
 	if countOnly {
-		for {
-			_, readerr := bufioReader.ReadString('\n')
-			if readerr == io.EOF {
-				return lineCount, fmt.Errorf("counting lines in source file: %v", err)
-			}
-			lineCount = lineCount + 1
-		}
-
+		return lineCounter(fileReader)
 	} else {
 
-		// Open the Destination file for writing
+		bufioReader := bufio.NewReader(fileReader)
 		for {
 			fileCount++
 			outputWriter, err := os.Create(param.incFilename(fileCount))
@@ -150,5 +141,22 @@ func (param flagParams) splitFile(countOnly bool) (int, error) {
 			}
 		}
 	}
+}
 
+func lineCounter(rdr io.Reader) (int, error) {
+	var lineCount int
+
+	br := bufio.NewReader(rdr)
+	for {
+		lineCount = lineCount + 1
+		_, readerr := br.ReadString('\n')
+		if readerr == io.EOF {
+			return lineCount, nil
+		}
+		if readerr != nil {
+			return 0, fmt.Errorf("counting lines in source file: %v", readerr)
+		}
+	}
+
+	return 0, nil
 }
