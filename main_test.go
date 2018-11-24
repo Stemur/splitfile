@@ -37,25 +37,28 @@ func Test_CLI(t *testing.T) {
 	sameNameerr := "the source and destination files must be different"
 	lineCountError := "the file cannot be split to less than 1 line per file"
 	maxFileCountError := "maximum file count must be zero (maximum files) or greater"
+	evenfilesplitError := "maximum file count cannot be zero to split file evenly over multiple files"
 
 	var fileNameTests = []struct {
 		sourcefile string
 		destfile   string
 		lineCount  int
 		maxfiles   int
+		evensplit  bool
 		output     string
 	}{
-		{"", "destfiletest.tmp", 10, 0, blankNameerr},
-		{"sourcefiletest.tmp", "destfiletest.tmp", 10, 0, ""},
-		{"sourcefiletest.tmp", "", 10, 0, blankNameerr},
-		{"", "", 10, 0, blankNameerr},
-		{"sourcefiletest.tmp", "destfiletest.tmp", 10, 0, sameNameerr},
-		{"sourcefiletest.tmp", "destfiletest.tmp", 100, 0, ""},
-		{"sourcefiletest.tmp", "destfiletest.tmp", -1, 0, lineCountError},
-		{"sourcefiletest.tmp", "destfiletest.tmp", 1, 1, ""},
-		{"sourcefiletest.tmp", "destfiletest.tmp", 10, 1, ""},
-		{"sourcefiletest.tmp", "destfiletest.tmp", 10, 0, ""},
-		{"sourcefiletest.tmp", "destfiletest.tmp", 10, -1, maxFileCountError},
+		{"", "destfiletest.tmp", 10, 0, false, blankNameerr},
+		{"sourcefiletest.tmp", "destfiletest.tmp", 10, 0, false, ""},
+		{"sourcefiletest.tmp", "", 10, 0, false, blankNameerr},
+		{"", "", 10, 0, false, blankNameerr},
+		{"sourcefiletest.tmp", "destfiletest.tmp", 10, 0, false, sameNameerr},
+		{"sourcefiletest.tmp", "destfiletest.tmp", 100, 0, false, ""},
+		{"sourcefiletest.tmp", "destfiletest.tmp", -1, 0, false, lineCountError},
+		{"sourcefiletest.tmp", "destfiletest.tmp", 1, 1, false, ""},
+		{"sourcefiletest.tmp", "destfiletest.tmp", 10, 1, false, ""},
+		{"sourcefiletest.tmp", "destfiletest.tmp", 10, 0, false, ""},
+		{"sourcefiletest.tmp", "destfiletest.tmp", 10, -1, false, maxFileCountError},
+		{"sourcefiletest.tmp", "destfiletest.tmp", 0, 0, true, evenfilesplitError},
 	}
 
 	for _, tt := range fileNameTests {
@@ -63,6 +66,7 @@ func Test_CLI(t *testing.T) {
 		f.destFile = tt.destfile
 		f.lineCount = tt.lineCount
 		f.maxFiles = tt.maxfiles
+		f.evenSplit = tt.evensplit
 		got := f.checkFlagErrors()
 		expected := tt.output
 
@@ -121,8 +125,8 @@ func Test_fileExists(t *testing.T) {
 		expected string
 		altexp   string
 	}{
-		{1, flagParams{"unknown", 10, "unknown", 5, false}, "opening source file for reading: open %s: no such file or directory", "source file for reading: open %s: no such file or directory"},
-		{2, flagParams{"testfile.txt", 1, "unknown", 1, false}, "opening source file for reading: open %s: no such file or directory", "source file for reading: open %s: no such file or directory"},
+		{1, flagParams{"unknown", 10, "unknown", 5, false, false}, "opening source file for reading: open %s: no such file or directory", "source file for reading: open %s: no such file or directory"},
+		{2, flagParams{"testfile.txt", 1, "unknown", 1, false, false}, "opening source file for reading: open %s: no such file or directory", "source file for reading: open %s: no such file or directory"},
 	}
 
 	for _, tt := range tests {
