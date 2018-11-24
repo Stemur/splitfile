@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"testing"
 )
@@ -11,6 +12,21 @@ func Benchmark_incFilename(b *testing.B) {
 	var f flagParams
 	for n := 0; n < b.N; n++ {
 		f.incFilename(n)
+	}
+}
+
+func Benchmark_lineCounter(b *testing.B) {
+	b.ReportAllocs()
+
+	var in *bytes.Buffer
+	var tmpstr string
+
+	for i := 0; i < 9; i++ {
+		tmpstr = fmt.Sprintf("%vtest line %v\n", tmpstr, i)
+	}
+	for n := 0; n < b.N; n++ {
+		in = bytes.NewBufferString(tmpstr)
+		lineCounter(in)
 	}
 }
 
@@ -80,7 +96,7 @@ func Test_multiincFileName(t *testing.T) {
 	var fileNameTests = []struct {
 		counter  int
 		expected string
-		altexp string
+		altexp   string
 	}{
 		{1, "MyFileName1.txt", "MyFileName1.txt"},
 		{2, "MyFileName2.txt", "MyFileName2.txt"},
@@ -103,12 +119,11 @@ func Test_fileExists(t *testing.T) {
 		counter  int
 		params   flagParams
 		expected string
-		altexp string
+		altexp   string
 	}{
-		{1, flagParams{"unknown", 10, "unknown", 5, false},     "opening source file for reading: open %s: no such file or directory", "source file for reading: open %s: no such file or directory"},
+		{1, flagParams{"unknown", 10, "unknown", 5, false}, "opening source file for reading: open %s: no such file or directory", "source file for reading: open %s: no such file or directory"},
 		{2, flagParams{"testfile.txt", 1, "unknown", 1, false}, "opening source file for reading: open %s: no such file or directory", "source file for reading: open %s: no such file or directory"},
 	}
-
 
 	for _, tt := range tests {
 		_, got := tt.params.splitFile(false)
@@ -116,4 +131,23 @@ func Test_fileExists(t *testing.T) {
 			t.Errorf("Counter: %v \nExpected: %s\nResult  : %s", tt.counter, tt.expected, got)
 		}
 	}
+}
+
+func Test_lineCounter(t *testing.T) {
+
+	var in *bytes.Buffer
+	var tmpstr string
+	var expected int
+
+	for i := 0; i < 9; i++ {
+		tmpstr = fmt.Sprintf("%vtest line %v\n", tmpstr, i)
+		expected = i + 1
+	}
+	in = bytes.NewBufferString(tmpstr)
+	got, _ := lineCounter(in)
+	if got != expected+1 {
+		t.Errorf("Counter: %v \nExpected: %v", got, expected)
+		t.Fail()
+	}
+
 }
