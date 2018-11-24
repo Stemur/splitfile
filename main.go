@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -15,6 +16,7 @@ type flagParams struct {
 	lineCount  int
 	destFile   string
 	maxFiles   int
+	evenSplit  bool
 	countLines bool
 }
 
@@ -25,6 +27,7 @@ func init() {
 	flag.IntVar(&params.lineCount, "l", 0, "maximum lines files to be split into")
 	flag.StringVar(&params.destFile, "o", "", "Destination file name")
 	flag.IntVar(&params.maxFiles, "m", 0, "Maximum number of files to be output. (0 for all)")
+	flag.BoolVar(&params.evenSplit, "e", false, "Split the file evenly over the maximum number of files")
 	flag.BoolVar(&params.countLines, "c", false, "Count the number of lines in the file")
 }
 
@@ -78,12 +81,16 @@ func (param flagParams) checkFlagErrors() error {
 		return fmt.Errorf("the source and destination files must be different")
 	}
 
-	if param.lineCount < 1 && param.countLines == false {
+	if param.lineCount < 1 && param.countLines == false && param.evenSplit == false {
 		return fmt.Errorf("the file cannot be split to less than 1 line per file")
 	}
 
 	if param.maxFiles < 0 {
 		return fmt.Errorf("maximum file count must be zero (maximum files) or greater")
+	}
+
+	if param.evenSplit && param.maxFiles == 0 {
+		return fmt.Errorf("maximum file count cannot be zero to split file evenly over multiple files")
 	}
 
 	return err
@@ -115,6 +122,19 @@ func (param flagParams) splitFile(countOnly bool) (int, error) {
 		return lineCounter(fileReader)
 	}
 
+	if param.evenSplit {
+		lineCount, err := lineCounter(fileReader)
+		if err != nil {
+			return 0, fmt.Errorf("unable to get number of lines in the file :%v", err)
+		}
+		param.lineCount = int(math.Ceil(float64(lineCount) / float64(param.maxFiles)))
+		if param.lineCount < 1 {
+			param.lineCount = 1
+			param.maxFiles = param.maxFiles - 1
+		}
+	}
+
+	fileReader.Seek(0, 0) // Reset file pointer as we have already read through it to get the number of lines.
 	bufioReader := bufio.NewReader(fileReader)
 	for {
 		fileCount++
