@@ -50,7 +50,6 @@ func main() {
 	if !params.countLines {
 		fmt.Printf("Destination file: %v \n", params.destFile)
 
-		//fileCount, err := params.splitFile(params.countLines)
 		fileCount, err := params.splitFile()
 		if err != nil {
 			fmt.Printf("Error: %v", err)
@@ -60,7 +59,6 @@ func main() {
 		fmt.Printf("Split complete. %v files.\n", fileCount)
 	} else {
 		lineCount, err := params.splitFile()
-		//lineCount, err := params.splitFile(params.countLines)
 		if err != nil {
 			fmt.Printf("Error: %v", err)
 			return
@@ -112,7 +110,6 @@ func (param flagParams) incFilename(counter int) string {
 
 }
 
-//func (param flagParams) splitFile(countOnly bool) (int, error) {
 func (param flagParams) splitFile() (int, error) {
 
 	var err error
