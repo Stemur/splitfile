@@ -125,12 +125,12 @@ func Test_fileExists(t *testing.T) {
 		expected string
 		altexp   string
 	}{
-		{1, flagParams{"unknown", 10, "unknown", 5, false, false}, "opening source file for reading: open %s: no such file or directory", "source file for reading: open %s: no such file or directory"},
-		{2, flagParams{"testfile.txt", 1, "unknown", 1, false, false}, "opening source file for reading: open %s: no such file or directory", "source file for reading: open %s: no such file or directory"},
+		{1, flagParams{"unknown", 10, "unknown", 5, false, false, false}, "opening source file for reading: open %s: no such file or directory", "source file for reading: open %s: no such file or directory"},
+		{2, flagParams{"testfile.txt", 1, "unknown", 1, false, false, false}, "opening source file for reading: open %s: no such file or directory", "source file for reading: open %s: no such file or directory"},
 	}
 
 	for _, tt := range tests {
-		_, got := tt.params.splitFile(false)
+		_, got := tt.params.splitFile()
 		if got.Error() != fmt.Sprintf(tt.expected, tt.params.sourceFile) && got.Error() != fmt.Sprintf(tt.altexp, tt.params.sourceFile) {
 			t.Errorf("Counter: %v \nExpected: %s\nResult  : %s", tt.counter, tt.expected, got)
 		}

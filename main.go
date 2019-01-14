@@ -18,6 +18,7 @@ type flagParams struct {
 	maxFiles   int
 	evenSplit  bool
 	countLines bool
+	repeatHeader bool
 }
 
 var params flagParams
@@ -28,6 +29,7 @@ func init() {
 	flag.StringVar(&params.destFile, "o", "", "Destination file name")
 	flag.IntVar(&params.maxFiles, "m", 0, "Maximum number of files to be output. (0 for all)")
 	flag.BoolVar(&params.evenSplit, "e", false, "Split the file evenly over the maximum number of files")
+	flag.BoolVar(&params.repeatHeader, "h", false, "Repeat the header line of the first file in every file output.")
 	flag.BoolVar(&params.countLines, "c", false, "Count the number of lines in the file")
 }
 
@@ -48,7 +50,8 @@ func main() {
 	if !params.countLines {
 		fmt.Printf("Destination file: %v \n", params.destFile)
 
-		fileCount, err := params.splitFile(params.countLines)
+		//fileCount, err := params.splitFile(params.countLines)
+		fileCount, err := params.splitFile()
 		if err != nil {
 			fmt.Printf("Error: %v", err)
 			return
@@ -56,7 +59,8 @@ func main() {
 
 		fmt.Printf("Split complete. %v files.\n", fileCount)
 	} else {
-		lineCount, err := params.splitFile(params.countLines)
+		lineCount, err := params.splitFile()
+		//lineCount, err := params.splitFile(params.countLines)
 		if err != nil {
 			fmt.Printf("Error: %v", err)
 			return
@@ -93,6 +97,10 @@ func (param flagParams) checkFlagErrors() error {
 		return fmt.Errorf("maximum file count cannot be zero to split file evenly over multiple files")
 	}
 
+	if param.countLines && param.repeatHeader {
+		return fmt.Errorf("line count only, line headers cannot be repeated when there is no file output")
+	}
+
 	return err
 
 }
@@ -104,12 +112,14 @@ func (param flagParams) incFilename(counter int) string {
 
 }
 
-func (param flagParams) splitFile(countOnly bool) (int, error) {
+//func (param flagParams) splitFile(countOnly bool) (int, error) {
+func (param flagParams) splitFile() (int, error) {
 
 	var err error
 	var eoferr error
 	var fileCount int
 	var fileLines string
+	var headerString string
 
 	// Open the source file for reading
 	fileReader, err := os.Open(param.sourceFile)
@@ -118,7 +128,7 @@ func (param flagParams) splitFile(countOnly bool) (int, error) {
 	}
 	defer fileReader.Close()
 
-	if countOnly {
+	if param.countLines {
 		return lineCounter(fileReader)
 	}
 
@@ -132,9 +142,17 @@ func (param flagParams) splitFile(countOnly bool) (int, error) {
 			param.lineCount = 1
 			param.maxFiles = param.maxFiles - 1
 		}
+		fileReader.Seek(0, 0) // Reset file pointer as we may have already read through it to get the number of lines.
 	}
 
-	fileReader.Seek(0, 0) // Reset file pointer as we have already read through it to get the number of lines.
+	if param.repeatHeader {
+		headerString, err = getHeader(fileReader)
+		if err != nil {
+			return 0, fmt.Errorf("error reading the header line: %v", err)
+		}
+		fileReader.Seek(0, 0) // Reset file pointer as we may have already read through it to get the number of lines.
+	}
+
 	bufioReader := bufio.NewReader(fileReader)
 	for {
 		fileCount++
@@ -144,6 +162,13 @@ func (param flagParams) splitFile(countOnly bool) (int, error) {
 		}
 
 		owriter := bufio.NewWriter(outputWriter)
+
+		// Write the header line if the repeatHeader parameter is set to true and we are not on the first file
+		if param.repeatHeader && fileCount > 1 {
+			if _, err := owriter.WriteString(headerString); err != nil {
+				return fileCount, fmt.Errorf("writing header to output file: %v", err)
+			}
+		}
 		for i := 0; i < param.lineCount; i++ {
 			fileLines, eoferr = bufioReader.ReadString('\n')
 			if eoferr == io.EOF {
@@ -176,5 +201,16 @@ func lineCounter(rdr io.Reader) (int, error) {
 			return 0, fmt.Errorf("counting lines in source file: %v", readerr)
 		}
 	}
+
+}
+
+func getHeader(rdr io.Reader) (string, error) {
+	br := bufio.NewReader(rdr)
+	hdr, readerr := br.ReadString('\n')
+	if readerr != nil {
+		return "", fmt.Errorf("counting lines in source file: %v", readerr)
+	}
+
+	return hdr, nil
 
 }
